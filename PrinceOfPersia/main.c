@@ -27,6 +27,8 @@
 
 PSP_MODULE_INFO("POPRemastered", 0x1007, 1, 0);
 
+int sceKernelQuerySystemCall(void *function);
+
 #define MAKE_CALL(a, f) _sw(0x0C000000 | (((u32)(f) >> 2) & 0x03FFFFFF), a);
 
 static STMOD_HANDLER previous;
