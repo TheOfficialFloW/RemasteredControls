@@ -37,3 +37,13 @@ Download [tombraider_remastered.prx](https://github.com/TheOfficialFloW/Remaster
 ```
 ms0:/seplugins/tombraider_remastered.prx 1
 ```
+
+## 5. Prince Of Persia
+
+Compatible with `Prince Of Persia: Revelations` and `Prince Of Persia: Rival Swords`.
+
+Download [pop_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/POPRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+
+```
+ms0:/seplugins/pop_remastered.prx 1
+```
