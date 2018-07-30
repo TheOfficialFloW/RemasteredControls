@@ -47,3 +47,6 @@ Download [pop_remastered.prx](https://github.com/TheOfficialFloW/RemasteredContr
 ```
 ms0:/seplugins/pop_remastered.prx 1
 ```
+
+# Issues
+At this time only bug reports are accepted. No feature requests, please.
