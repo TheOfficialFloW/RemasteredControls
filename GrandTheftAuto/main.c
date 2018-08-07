@@ -1,5 +1,5 @@
 /*
-  Remastered Controls: GTA
+  Remastered Controls: Grand Theft Auto
   Copyright (C) 2018, TheFloW
 
   This program is free software: you can redistribute it and/or modify
