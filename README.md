@@ -47,3 +47,17 @@ Download [pop_remastered.prx](https://github.com/TheOfficialFloW/RemasteredContr
 ```
 ms0:/seplugins/pop_remastered.prx 1
 ```
+
+## 6. Kingdom Hearts
+
+Compatible with `Kingdom Hearts: Birth By Sleep` and `Kingdom Hearts: Birth By Sleep Final Mix`.
+
+Download [khbbs_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/KHBBSRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+
+```
+ms0:/seplugins/khbbs_remastered.prx 1
+```
+
+## Support
+
+Support me on [patreon](https://www.patreon.com/TheOfficialFloW) for more content
