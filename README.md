@@ -58,6 +58,16 @@ Download [khbbs_remastered.prx](https://github.com/TheOfficialFloW/RemasteredCon
 ms0:/seplugins/khbbs_remastered.prx 1
 ```
 
+## 7. Metal Gear Solid
+
+Compatible with `Metal Gear Solid: Peace Walker` and `Metal Gear Solid: Portable Ops`.
+
+Download [mgs_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/MGSRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+
+```
+ms0:/seplugins/mgs_remastered.prx 1
+```
+
 ## Support
 
 Support me on [patreon](https://www.patreon.com/TheOfficialFloW) for more content
