@@ -12,7 +12,7 @@ ms0:/seplugins/gta_remastered.prx 1
 
 ## Collection
 
-1. [Grand Theft Auto](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/GTARemastered)
+1. [Grand Theft Auto](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/GTARemastered)  
    **Changelog v2**:
 
    - Removed R and cross buttons swap
