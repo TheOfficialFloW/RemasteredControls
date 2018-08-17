@@ -20,16 +20,16 @@ ms0:/seplugins/gta_remastered.prx 1
 
 3. [Splinter Cell: Essentials](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/SplinterCellRemastered)
 
-4. [Tomb Raider](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/TombRaiderRemastered)
+4. [Tomb Raider](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/TombRaiderRemastered)  
    Compatible with `Tomb Raider: Anniversary` and `Tomb Raider: Legend`.
 
-5. [Prince Of Persia](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/POPRemastered)
+5. [Prince Of Persia](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/POPRemastered)  
    Compatible with `Prince Of Persia: Revelations` and `Prince Of Persia: Rival Swords`.
 
-6. [Kingdom Hearts](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/KHBBSRemastered)
+6. [Kingdom Hearts](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/KHBBSRemastered)  
    Compatible with `Kingdom Hearts: Birth By Sleep` and `Kingdom Hearts: Birth By Sleep Final Mix`.
 
-7. [Metal Gear Solid](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/MGSRemastered)
+7. [Metal Gear Solid](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/MGSRemastered)  
    Compatible with `Metal Gear Solid: Peace Walker` and `Metal Gear Solid: Portable Ops`.
 
 ## Support
