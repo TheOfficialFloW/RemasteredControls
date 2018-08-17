@@ -13,11 +13,8 @@ ms0:/seplugins/gta_remastered.prx 1
 ## Collection
 
 1. [Grand Theft Auto](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/GTARemastered)  
-   **Changelog v2**:
-
-   - Removed R and cross buttons swap
-
-   Compatible with `Grand Theft Auto: Liberty City Stories` and `Grand Theft Auto: Vice City Stories`.
+   Compatible with `Grand Theft Auto: Liberty City Stories` and `Grand Theft Auto: Vice City Stories`.  
+   Changelog v2: Removed R and cross buttons swap
 
 2. [Resitance: Retribution](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/ResistanceRemastered)
 
