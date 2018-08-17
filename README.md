@@ -2,71 +2,38 @@
 
 A collection of dual analog patches for PSP games on Adrenaline
 
-## 1. Grand Theft Auto
+## Installation
 
-Compatible with `Grand Theft Auto: Liberty City Stories` and `Grand Theft Auto: Vice City Stories`.
-
-Download [gta_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/GTARemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+For all plugins below, you should install them by copying to `ux0:pspemu/seplugins` and adding their path to `ux0:pspemu/seplugins/game.txt`, for example:
 
 ```
 ms0:/seplugins/gta_remastered.prx 1
 ```
 
-## 2. Resitance: Retribution
+## Collection
 
-Download [resistance_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/ResistanceRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+1. [Grand Theft Auto](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/GTARemastered)
+   **Changelog v2**:
 
-```
-ms0:/seplugins/resistance_remastered.prx 1
-```
+   - Removed L and cross buttons swap
 
-## 3. Splinter Cell: Essentials
+   Compatible with `Grand Theft Auto: Liberty City Stories` and `Grand Theft Auto: Vice City Stories`.
 
-Download [splintercell_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/SplinterCellRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+2. [Resitance: Retribution](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/ResistanceRemastered)
 
-```
-ms0:/seplugins/splintercell_remastered.prx 1
-```
+3. [Splinter Cell: Essentials](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/SplinterCellRemastered)
 
-## 4. Tomb Raider
+4. [Tomb Raider](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/TombRaiderRemastered)
+   Compatible with `Tomb Raider: Anniversary` and `Tomb Raider: Legend`.
 
-Compatible with `Tomb Raider: Anniversary` and `Tomb Raider: Legend`.
+5. [Prince Of Persia](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/POPRemastered)
+   Compatible with `Prince Of Persia: Revelations` and `Prince Of Persia: Rival Swords`.
 
-Download [tombraider_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/TombRaiderRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
+6. [Kingdom Hearts](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/KHBBSRemastered)
+   Compatible with `Kingdom Hearts: Birth By Sleep` and `Kingdom Hearts: Birth By Sleep Final Mix`.
 
-```
-ms0:/seplugins/tombraider_remastered.prx 1
-```
-
-## 5. Prince Of Persia
-
-Compatible with `Prince Of Persia: Revelations` and `Prince Of Persia: Rival Swords`.
-
-Download [pop_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/POPRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
-
-```
-ms0:/seplugins/pop_remastered.prx 1
-```
-
-## 6. Kingdom Hearts
-
-Compatible with `Kingdom Hearts: Birth By Sleep` and `Kingdom Hearts: Birth By Sleep Final Mix`.
-
-Download [khbbs_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/KHBBSRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
-
-```
-ms0:/seplugins/khbbs_remastered.prx 1
-```
-
-## 7. Metal Gear Solid
-
-Compatible with `Metal Gear Solid: Peace Walker` and `Metal Gear Solid: Portable Ops`.
-
-Download [mgs_remastered.prx](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/MGSRemastered), copy it to `ux0:pspemu/seplugins` and write this line to `ux0:pspemu/seplugins/game.txt`:
-
-```
-ms0:/seplugins/mgs_remastered.prx 1
-```
+7. [Metal Gear Solid](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/MGSRemastered)
+   Compatible with `Metal Gear Solid: Peace Walker` and `Metal Gear Solid: Portable Ops`.
 
 ## Support
 

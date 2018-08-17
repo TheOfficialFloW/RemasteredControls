@@ -31,26 +31,16 @@ int sceKernelQuerySystemCall(void *function);
 
 #define MAKE_CALL(a, f) _sw(0x0C000000 | (((u32)(f) >> 2) & 0x03FFFFFF), a);
 
-#define REDIRECT_FUNCTION(a, f) \
-{ \
-  u32 func = a; \
-  _sw(0x08000000 | (((u32)(f) >> 2) & 0x03FFFFFF), func); \
-  _sw(0, func + 4); \
-}
-
 enum GtaPad {
   PAD_LX = 1,
   PAD_LY = 2,
   PAD_RX = 3,
   PAD_RY = 4,
-  PAD_RTRIGGER = 7,
-  PAD_CROSS = 21,
 };
 
 static STMOD_HANDLER previous;
 
-static u32 cameraXStub, cameraYStub, aimXStub, aimYStub,
-           vcsAccelerationStub, vcsAccelerationNormalStub, lcsAccelerationStub;
+static u32 cameraXStub, cameraYStub, aimXStub, aimYStub;
 
 static u32 MakeSyscallStub(void *function) {
   SceUID block_id = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "", PSP_SMEM_High, 2 * sizeof(u32), NULL);
@@ -74,24 +64,6 @@ short aimX(short *pad) {
 
 short aimY(short *pad) {
   return pad[PAD_LY] ? pad[PAD_LY] : pad[PAD_RY];
-}
-
-short vcsAcceleration(short *pad) {
-  if (pad[77] == 0)
-    return pad[PAD_RTRIGGER];
-  return 0;
-}
-
-short vcsAccelerationNormal(short *pad) {
-  if (pad[77] == 0)
-    return pad[PAD_CROSS];
-  return 0;
-}
-
-short lcsAcceleration(short *pad) {
-  if (pad[67] == 0)
-    return pad[PAD_RTRIGGER];
-  return 0;
 }
 
 static int PatchVCS(u32 addr, u32 text_addr) {
@@ -120,36 +92,6 @@ static int PatchVCS(u32 addr, u32 text_addr) {
     MAKE_CALL(addr + 0x8C, aimXStub);
     MAKE_CALL(addr + 0x158, aimYStub);
     MAKE_CALL(addr + 0x1BC, aimYStub);
-    return 1;
-  }
-
-  // Swap R trigger and cross button
-  if (_lw(addr + 0x00) == 0x9485009A && _lw(addr + 0x04) == 0x0005282B &&
-      _lw(addr + 0x08) == 0x30A500FF && _lw(addr + 0x0C) == 0x10A00003 &&
-      _lw(addr + 0x10) == 0x00000000 && _lw(addr + 0x14) == 0x10000002 &&
-      _lw(addr + 0x18) == 0x00001025 && _lw(addr + 0x1C) == 0x8482002A) {
-    REDIRECT_FUNCTION(addr + 0x00, vcsAccelerationStub);
-    return 1;
-  }
-
-  // Use normal button for flying plane
-  if (_lw(addr + 0x00) == 0xC60E0780 && _lw(addr + 0x04) == 0x460D6302 &&
-      _lw(addr + 0x08) == 0x460D7342) {
-    MAKE_CALL(addr + 0x1C, vcsAccelerationNormalStub);
-    MAKE_CALL(addr + 0x3D0, vcsAccelerationNormalStub);
-    return 1;
-  }
-
-  // Use normal button for flying helicoper
-  if (_lw(addr + 0x00) == 0x16400018 && _lw(addr + 0xC) == 0x02202025) {
-    MAKE_CALL(addr + 0x14, vcsAccelerationNormalStub);
-    return 1;
-  }
-
-  if (_lw(addr + 0x00) == 0x1480000C && _lw(addr + 0x10) == 0x50A0000A) {
-    _sh(PAD_RTRIGGER * 2, addr + 0x20);
-    _sh(PAD_RTRIGGER * 2, addr + 0x68);
-    _sh(PAD_CROSS * 2, addr + 0x80);
     return 1;
   }
 
@@ -199,20 +141,6 @@ static int PatchLCS(u32 addr, u32 text_addr) {
     return 1;
   }
 
-  // Swap R trigger and cross button
-  if (_lw(addr + 0x00) == 0x94850086 && _lw(addr + 0x04) == 0x10A00003 &&
-      _lw(addr + 0x08) == 0x00000000 && _lw(addr + 0x0C) == 0x10000002 &&
-      _lw(addr + 0x10) == 0x00001025 && _lw(addr + 0x14) == 0x8482002A) {
-    REDIRECT_FUNCTION(addr + 0x00, lcsAccelerationStub);
-    return 1;
-  }
-
-  if (_lw(addr + 0x00) == 0x14A0000E && _lw(addr + 0x10) == 0x50C0000C) {
-    _sh(PAD_RTRIGGER * 2, addr + 0x20);
-    _sh(PAD_CROSS * 2, addr + 0x50);
-    return 1;
-  }
-
   // Allow using L trigger when walking
   if (_lw(addr + 0x00) == 0x14A0000E && _lw(addr + 0x10) == 0x10A00008 &&
       _lw(addr + 0x1C) == 0x04A00003) {
@@ -241,9 +169,6 @@ int OnModuleStart(SceModule2 *mod) {
     cameraYStub = MakeSyscallStub(cameraY);
     aimXStub = MakeSyscallStub(aimX);
     aimYStub = MakeSyscallStub(aimY);
-    vcsAccelerationStub = MakeSyscallStub(vcsAcceleration);
-    vcsAccelerationNormalStub = MakeSyscallStub(vcsAccelerationNormal);
-    lcsAccelerationStub = MakeSyscallStub(lcsAcceleration);
 
     u32 i;
     for (i = 0; i < mod->text_size; i += 4) {
