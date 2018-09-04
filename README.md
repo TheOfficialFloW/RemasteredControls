@@ -32,6 +32,8 @@ ms0:/seplugins/gta_remastered.prx 1
 7. [Metal Gear Solid](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/MGSRemastered)  
    Compatible with `Metal Gear Solid: Peace Walker` and `Metal Gear Solid: Portable Ops`.
 
+8. [The Warriors](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/WarriorsRemastered)  
+
 ## Support
 
 Support me on [patreon](https://www.patreon.com/TheOfficialFloW) for more content
