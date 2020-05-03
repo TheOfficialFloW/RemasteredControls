@@ -34,6 +34,9 @@ ms0:/seplugins/gta_remastered.prx 1
 
 8. [The Warriors](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/WarriorsRemastered)  
 
+9. [Tony Hawk](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/TonyHawkRemastered)  
+   Compatible with `Tony Hawk's Project 8`.
+
 ## Support
 
 Support me on [patreon](https://www.patreon.com/TheOfficialFloW) for more content
