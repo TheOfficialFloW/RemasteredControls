@@ -10,6 +10,9 @@ For all plugins below, you should install them by copying to `ux0:pspemu/seplugi
 ms0:/seplugins/gta_remastered.prx 1
 ```
 
+Additionally, ensure the right analog stick isn't mapped to any controls.
+This can be done by holding the PlayStation button, opening official settings and unmapping any existing right analog controls.
+
 ## Collection
 
 1. [Grand Theft Auto](https://github.com/TheOfficialFloW/RemasteredControls/releases/tag/GTARemastered)  
