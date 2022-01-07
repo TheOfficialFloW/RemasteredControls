@@ -43,6 +43,8 @@ int sceKernelQuerySystemCall(void *function);
   ptr = (void *)patch_buffer; \
 }
 
+#define EMULATOR_DEVCTL__IS_EMULATOR     0x00000003
+
 static STMOD_HANDLER previous;
 
 static int (* getCamera)(int *input);
@@ -104,45 +106,65 @@ int getInputPoPatched(char *input) {
   return res;
 }
 
-int OnModuleStart(SceModule2 *mod) {
-  if (strcmp(mod->modname, "mgp_main") == 0) {
-    u32 i;
-    for (i = 0; i < mod->text_size; i += 4) {
-      u32 addr = mod->text_addr + i;
+void applyPatch(u32 text_addr, u32 text_size, int emulator){
+  u32 i;
+  for (i = 0; i < text_size; i += 4) {
+    u32 addr = text_addr + i;
 
-      int po = (_lw(addr + 0x00) == 0x5040004F && _lw(addr + 0x04) == 0x02402021 && _lw(addr + 0x08) == 0xAE0002F0);
-      int pw = (_lw(addr + 0x00) == 0x1040004F && _lw(addr + 0x04) == 0x00000000 && _lw(addr + 0x08) == 0xAE0002F0);
-      if (po || pw) {
-        // Skip branch
-        _sw(0, addr + 0x00);
+    int po = (_lw(addr + 0x00) == 0x5040004F && _lw(addr + 0x04) == 0x02402021 && _lw(addr + 0x08) == 0xAE0002F0);
+    int pw = (_lw(addr + 0x00) == 0x1040004F && _lw(addr + 0x04) == 0x00000000 && _lw(addr + 0x08) == 0xAE0002F0);
+    if (po || pw) {
+      // Skip branch
+      _sw(0, addr + 0x00);
 
-        // Don't reset camera
-        _sw(0, addr + 0x08);
-        _sw(0, addr + 0x0C);
+      // Don't reset camera
+      _sw(0, addr + 0x08);
+      _sw(0, addr + 0x0C);
 
-        // Redirect camera function
-        if (pw) {
+      // Redirect camera function
+      if (pw) {
+        if(emulator == 0){
           HIJACK_FUNCTION(addr - 0x38, MakeSyscallStub(getCameraPatched), getCamera);
-        } else {
-          HIJACK_FUNCTION(addr - 0x3C, MakeSyscallStub(getCameraPatched), getCamera);
+        }else{
+          HIJACK_FUNCTION(addr - 0x38, getCameraPatched, getCamera);
         }
-
-        continue;
+      } else {
+        if(emulator == 0){
+          HIJACK_FUNCTION(addr - 0x3C, MakeSyscallStub(getCameraPatched), getCamera);
+        }else{
+          HIJACK_FUNCTION(addr - 0x3C, getCameraPatched, getCamera);
+        }
       }
 
-      // Redirect input for camera in aiming mode
-      if (_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
-        HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPwPatched), getInputPw);
-        continue;
-      }
-      if (_lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
-        HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPoPatched), getInputPo);
-        continue;
-      }
+      continue;
     }
 
-    sceKernelDcacheWritebackAll();
-    sceKernelIcacheClearAll();
+    // Redirect input for camera in aiming mode
+    if (_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
+      if(emulator == 0){
+        HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPwPatched), getInputPw);
+      }else{
+        HIJACK_FUNCTION(addr + 0x00, getInputPwPatched, getInputPw);
+      }
+      continue;
+    }
+    if (_lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
+      if(emulator == 0){
+        HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPoPatched), getInputPo);
+      }else{
+        HIJACK_FUNCTION(addr + 0x00, getInputPoPatched, getInputPo);
+      }
+      continue;
+    }
+  }
+
+  sceKernelDcacheWritebackAll();
+  sceKernelIcacheClearAll();
+}
+
+int OnModuleStart(SceModule2 *mod) {
+  if (strcmp(mod->modname, "mgp_main") == 0) {
+    applyPatch(mod->text_addr, mod->text_size, 0);
   }
 
   if (!previous)
@@ -151,8 +173,31 @@ int OnModuleStart(SceModule2 *mod) {
   return previous(mod);
 }
 
+static void CheckModules() {
+  SceUID modules[10];
+  SceKernelModuleInfo info;
+  int i, count = 0;
+
+  if (sceKernelGetModuleIdList(modules, sizeof(modules), &count) >= 0) {
+    for (i = 0; i < count; ++i) {
+      info.size = sizeof(SceKernelModuleInfo);
+      if (sceKernelQueryModuleInfo(modules[i], &info) < 0) {
+        continue;
+      }
+      if (strcmp(info.name, "mgp_main") == 0) {
+        applyPatch(info.text_addr, info.text_size, 1);
+      }
+    }
+  }
+}
+
 int module_start(SceSize args, void *argp) {
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
-  previous = sctrlHENSetStartModuleHandler(OnModuleStart);
+  if (sceIoDevctl("kemulator:", EMULATOR_DEVCTL__IS_EMULATOR, NULL, 0, NULL, 0) == 0) {
+    // Just scan the modules using normal/official syscalls.
+    CheckModules();
+  } else {
+    previous = sctrlHENSetStartModuleHandler(OnModuleStart);
+  }
   return 0;
 }
