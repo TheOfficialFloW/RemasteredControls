@@ -51,6 +51,8 @@ static int (* getCamera)(int *input);
 static int (* getInputPw)(char *input);
 static int (* getInputPo)(char *input);
 
+int camera_redirected = 0;
+
 static u32 MakeSyscallStub(void *function) {
   SceUID block_id = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "", PSP_SMEM_High, 2 * sizeof(u32), NULL);
   u32 stub = (u32)sceKernelGetBlockHeadAddr(block_id);
@@ -111,9 +113,10 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
   for (i = 0; i < text_size; i += 4) {
     u32 addr = text_addr + i;
 
+    int pp = (_lw(addr + 0x00) == 0x50400052 && _lw(addr + 0x04) == 0x02402021 && _lw(addr + 0x08) == 0xAE0002F0);
     int po = (_lw(addr + 0x00) == 0x5040004F && _lw(addr + 0x04) == 0x02402021 && _lw(addr + 0x08) == 0xAE0002F0);
     int pw = (_lw(addr + 0x00) == 0x1040004F && _lw(addr + 0x04) == 0x00000000 && _lw(addr + 0x08) == 0xAE0002F0);
-    if (po || pw) {
+    if (po || pw || pp) {
       // Skip branch
       _sw(0, addr + 0x00);
 
@@ -128,11 +131,17 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
         }else{
           HIJACK_FUNCTION(addr - 0x38, getCameraPatched, getCamera);
         }
-      } else {
+      } else if (po) {
         if(emulator == 0){
           HIJACK_FUNCTION(addr - 0x3C, MakeSyscallStub(getCameraPatched), getCamera);
         }else{
           HIJACK_FUNCTION(addr - 0x3C, getCameraPatched, getCamera);
+        }
+      } else if (pp) {
+        if(emulator == 0){
+          HIJACK_FUNCTION(addr - 0x48, MakeSyscallStub(getCameraPatched), getCamera);
+        }else{
+          HIJACK_FUNCTION(addr - 0x48, getCameraPatched, getCamera);
         }
       }
 
@@ -140,7 +149,8 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
     }
 
     // Redirect input for camera in aiming mode
-    if (_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
+    if (camera_redirected == 0 &&_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
+      camera_redirected = 1;
       if(emulator == 0){
         HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPwPatched), getInputPw);
       }else{
@@ -148,7 +158,8 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
       }
       continue;
     }
-    if (_lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
+    if (camera_redirected == 0 && _lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
+      camera_redirected = 1;
       if(emulator == 0){
         HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPoPatched), getInputPo);
       }else{
@@ -184,18 +195,28 @@ static void CheckModules() {
       if (sceKernelQueryModuleInfo(modules[i], &info) < 0) {
         continue;
       }
-      if (strcmp(info.name, "mgp_main") == 0) {
+      if ((camera_redirected == 0 && strcmp(info.name, "mgp_main") == 0) || strcmp(info.name, "mgp_stage") == 0) {
         applyPatch(info.text_addr, info.text_size, 1);
       }
     }
   }
 }
 
+static int ModuleMonitorThread(SceSize args, void *argp) {
+  while (1) {
+    sceKernelDelayThread(1000000); // 1 second
+    CheckModules();
+  }
+  return 0;
+}
+
 int module_start(SceSize args, void *argp) {
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
   if (sceIoDevctl("kemulator:", EMULATOR_DEVCTL__IS_EMULATOR, NULL, 0, NULL, 0) == 0) {
-    // Just scan the modules using normal/official syscalls.
-    CheckModules();
+    int monitor_thread = sceKernelCreateThread("MGSModuleMonitor", ModuleMonitorThread, 0x20, 0x1000, 0, NULL);
+    if (monitor_thread >= 0) {
+      sceKernelStartThread(monitor_thread, 0, NULL);
+    }
   } else {
     previous = sctrlHENSetStartModuleHandler(OnModuleStart);
   }
