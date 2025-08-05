@@ -51,7 +51,8 @@ static int (* getCamera)(int *input);
 static int (* getInputPw)(char *input);
 static int (* getInputPo)(char *input);
 
-int camera_redirected = 0;
+u32 hooked_camera_addr = 0;
+u32 hooked_input_addr = 0;
 
 static u32 MakeSyscallStub(void *function) {
   SceUID block_id = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "", PSP_SMEM_High, 2 * sizeof(u32), NULL);
@@ -59,6 +60,14 @@ static u32 MakeSyscallStub(void *function) {
   _sw(0x03E00008, stub);
   _sw(0x0000000C | (sceKernelQuerySystemCall(function) << 6), stub + 4);
   return stub;
+}
+
+static int isFunctionHijacked(void *addr) {
+    sceKernelDcacheWritebackRange(addr, 8);
+    sceKernelIcacheInvalidateRange(addr, 8);
+    u32 instr1 = *(u32 *)addr;
+    u32 instr2 = *(u32 *)((u8 *)addr + 4);
+    return ((instr1 & 0xFC000000) == 0x08000000 && instr2 == 0);
 }
 
 int getCameraPatched(int *input) {
@@ -116,6 +125,7 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
     int pp = (_lw(addr + 0x00) == 0x50400052 && _lw(addr + 0x04) == 0x02402021 && _lw(addr + 0x08) == 0xAE0002F0);
     int po = (_lw(addr + 0x00) == 0x5040004F && _lw(addr + 0x04) == 0x02402021 && _lw(addr + 0x08) == 0xAE0002F0);
     int pw = (_lw(addr + 0x00) == 0x1040004F && _lw(addr + 0x04) == 0x00000000 && _lw(addr + 0x08) == 0xAE0002F0);
+
     if (po || pw || pp) {
       // Skip branch
       _sw(0, addr + 0x00);
@@ -126,45 +136,29 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
 
       // Redirect camera function
       if (pw) {
-        if(emulator == 0){
-          HIJACK_FUNCTION(addr - 0x38, MakeSyscallStub(getCameraPatched), getCamera);
-        }else{
-          HIJACK_FUNCTION(addr - 0x38, getCameraPatched, getCamera);
-        }
+        hooked_camera_addr = addr - 0x38;
+        HIJACK_FUNCTION(hooked_camera_addr, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
       } else if (po) {
-        if(emulator == 0){
-          HIJACK_FUNCTION(addr - 0x3C, MakeSyscallStub(getCameraPatched), getCamera);
-        }else{
-          HIJACK_FUNCTION(addr - 0x3C, getCameraPatched, getCamera);
-        }
+        hooked_camera_addr = addr - 0x3C;
+        HIJACK_FUNCTION(hooked_camera_addr, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
       } else if (pp) {
-        if(emulator == 0){
-          HIJACK_FUNCTION(addr - 0x48, MakeSyscallStub(getCameraPatched), getCamera);
-        }else{
-          HIJACK_FUNCTION(addr - 0x48, getCameraPatched, getCamera);
-        }
+        hooked_camera_addr = addr - 0x48;
+        HIJACK_FUNCTION(hooked_camera_addr, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
       }
 
       continue;
     }
 
     // Redirect input for camera in aiming mode
-    if (camera_redirected == 0 &&_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
-      camera_redirected = 1;
-      if(emulator == 0){
-        HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPwPatched), getInputPw);
-      }else{
-        HIJACK_FUNCTION(addr + 0x00, getInputPwPatched, getInputPw);
-      }
+    if (_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
+      hooked_input_addr = addr;
+      HIJACK_FUNCTION(addr + 0x00, (void *)(emulator == 0 ? MakeSyscallStub(getInputPwPatched) : (u32)getInputPwPatched), getInputPw);
       continue;
     }
-    if (camera_redirected == 0 && _lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
-      camera_redirected = 1;
-      if(emulator == 0){
-        HIJACK_FUNCTION(addr + 0x00, MakeSyscallStub(getInputPoPatched), getInputPo);
-      }else{
-        HIJACK_FUNCTION(addr + 0x00, getInputPoPatched, getInputPo);
-      }
+
+    if (_lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
+      hooked_input_addr = addr;
+      HIJACK_FUNCTION(addr + 0x00, emulator == 0 ? MakeSyscallStub(getInputPoPatched) : (u32)getInputPoPatched, getInputPo);
       continue;
     }
   }
@@ -174,7 +168,7 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
 }
 
 int OnModuleStart(SceModule2 *mod) {
-  if (strcmp(mod->modname, "mgp_main") == 0) {
+  if ((strcmp(mod->modname, "mgp_main") == 0) || strcmp(mod->modname, "mgp_stage") == 0) {
     applyPatch(mod->text_addr, mod->text_size, 0);
   }
 
@@ -195,7 +189,24 @@ static void CheckModules() {
       if (sceKernelQueryModuleInfo(modules[i], &info) < 0) {
         continue;
       }
-      if ((camera_redirected == 0 && strcmp(info.name, "mgp_main") == 0) || strcmp(info.name, "mgp_stage") == 0) {
+
+      if (strcmp(info.name, "mgp_main") == 0) {
+        bool is_input_patched = hooked_input_addr > 0 && isFunctionHijacked((void*)hooked_input_addr);
+
+        if (is_input_patched) {
+          continue;
+        }
+
+        hooked_input_addr = 0;
+        applyPatch(info.text_addr, info.text_size, 1);
+      } else if (strcmp(info.name, "mgp_stage") == 0) {
+        bool is_camera_patched = hooked_camera_addr > 0 && isFunctionHijacked((void*)hooked_camera_addr);
+
+        if (is_camera_patched) {
+          continue;
+        }
+
+        is_camera_patched = 0;
         applyPatch(info.text_addr, info.text_size, 1);
       }
     }
