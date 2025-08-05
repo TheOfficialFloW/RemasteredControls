@@ -191,7 +191,7 @@ static void CheckModules() {
       }
 
       if (strcmp(info.name, "mgp_main") == 0) {
-        bool is_input_patched = hooked_input_addr > 0 && isFunctionHijacked((void*)hooked_input_addr);
+        bool is_input_patched = hooked_input_addr >= info.text_addr && hooked_input_addr < info.text_addr + info.text_size && isFunctionHijacked((void*)hooked_input_addr);
 
         if (is_input_patched) {
           continue;
@@ -200,13 +200,13 @@ static void CheckModules() {
         hooked_input_addr = 0;
         applyPatch(info.text_addr, info.text_size, 1);
       } else if (strcmp(info.name, "mgp_stage") == 0) {
-        bool is_camera_patched = hooked_camera_addr > 0 && isFunctionHijacked((void*)hooked_camera_addr);
+        bool is_camera_patched = hooked_camera_addr >= info.text_addr && hooked_camera_addr < info.text_addr + info.text_size && isFunctionHijacked((void*)hooked_camera_addr);
 
         if (is_camera_patched) {
           continue;
         }
 
-        is_camera_patched = 0;
+        hooked_camera_addr = 0;
         applyPatch(info.text_addr, info.text_size, 1);
       }
     }
