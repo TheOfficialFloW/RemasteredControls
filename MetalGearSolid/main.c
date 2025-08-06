@@ -51,8 +51,8 @@ static int (* getCamera)(int *input);
 static int (* getInputPw)(char *input);
 static int (* getInputPo)(char *input);
 
-u32 hooked_camera_addr = 0;
-u32 hooked_input_addr = 0;
+static u32 mgp_main_signature = 0;
+static u32 mgp_stage_signature = 0;
 
 static u32 MakeSyscallStub(void *function) {
   SceUID block_id = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "", PSP_SMEM_High, 2 * sizeof(u32), NULL);
@@ -60,14 +60,6 @@ static u32 MakeSyscallStub(void *function) {
   _sw(0x03E00008, stub);
   _sw(0x0000000C | (sceKernelQuerySystemCall(function) << 6), stub + 4);
   return stub;
-}
-
-static int isFunctionHijacked(void *addr) {
-    sceKernelDcacheWritebackRange(addr, 8);
-    sceKernelIcacheInvalidateRange(addr, 8);
-    u32 instr1 = *(u32 *)addr;
-    u32 instr2 = *(u32 *)((u8 *)addr + 4);
-    return ((instr1 & 0xFC000000) == 0x08000000 && instr2 == 0);
 }
 
 int getCameraPatched(int *input) {
@@ -117,7 +109,26 @@ int getInputPoPatched(char *input) {
   return res;
 }
 
+static u32 calculateModuleSignature(u32 text_addr, u32 text_size) {
+  u32 sig = text_addr ^ text_size;
+  
+  if (text_size >= 128) {
+    u32 offsets[] = {text_size/4, text_size/2, text_size*3/4};
+    
+    for (int i = 0; i < 3; i++) {
+      if (offsets[i] + 4 <= text_size) {
+        sig ^= *(u32*)(text_addr + offsets[i]);
+      }
+    }
+  }
+
+  return sig;
+}
+
 void applyPatch(u32 text_addr, u32 text_size, int emulator){
+  sceKernelDcacheWritebackInvalidateRange((void *)text_addr, text_size);
+  sceKernelIcacheInvalidateRange((void *)text_addr, text_size);
+
   u32 i;
   for (i = 0; i < text_size; i += 4) {
     u32 addr = text_addr + i;
@@ -136,14 +147,11 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
 
       // Redirect camera function
       if (pw) {
-        hooked_camera_addr = addr - 0x38;
-        HIJACK_FUNCTION(hooked_camera_addr, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
+        HIJACK_FUNCTION(addr - 0x38, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
       } else if (po) {
-        hooked_camera_addr = addr - 0x3C;
-        HIJACK_FUNCTION(hooked_camera_addr, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
+        HIJACK_FUNCTION(addr - 0x3C, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
       } else if (pp) {
-        hooked_camera_addr = addr - 0x48;
-        HIJACK_FUNCTION(hooked_camera_addr, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
+        HIJACK_FUNCTION(addr - 0x48, emulator == 0 ? MakeSyscallStub(getCameraPatched) : (u32)getCameraPatched, getCamera);
       }
 
       continue;
@@ -151,13 +159,11 @@ void applyPatch(u32 text_addr, u32 text_size, int emulator){
 
     // Redirect input for camera in aiming mode
     if (_lw(addr + 0x00) == 0x27BDFFD0 && _lw(addr + 0x0C) == 0x00808021 && _lw(addr + 0x28) == 0xE7B40020) {
-      hooked_input_addr = addr;
       HIJACK_FUNCTION(addr + 0x00, (void *)(emulator == 0 ? MakeSyscallStub(getInputPwPatched) : (u32)getInputPwPatched), getInputPw);
       continue;
     }
 
     if (_lw(addr + 0x00) == 0x27BDFFC0 && _lw(addr + 0x0C) == 0x2407FFFF && _lw(addr + 0x38) == 0xE7B40030) {
-      hooked_input_addr = addr;
       HIJACK_FUNCTION(addr + 0x00, emulator == 0 ? MakeSyscallStub(getInputPoPatched) : (u32)getInputPoPatched, getInputPo);
       continue;
     }
@@ -191,23 +197,19 @@ static void CheckModules() {
       }
 
       if (strcmp(info.name, "mgp_main") == 0) {
-        bool is_input_patched = hooked_input_addr >= info.text_addr && hooked_input_addr < info.text_addr + info.text_size && isFunctionHijacked((void*)hooked_input_addr);
+        u32 new_signature = calculateModuleSignature(info.text_addr, info.text_size);
 
-        if (is_input_patched) {
-          continue;
+        if (new_signature != mgp_main_signature) {
+            mgp_main_signature = new_signature;
+            applyPatch(info.text_addr, info.text_size, 1);
         }
-
-        hooked_input_addr = 0;
-        applyPatch(info.text_addr, info.text_size, 1);
       } else if (strcmp(info.name, "mgp_stage") == 0) {
-        bool is_camera_patched = hooked_camera_addr >= info.text_addr && hooked_camera_addr < info.text_addr + info.text_size && isFunctionHijacked((void*)hooked_camera_addr);
+        u32 new_signature = calculateModuleSignature(info.text_addr, info.text_size);
 
-        if (is_camera_patched) {
-          continue;
+        if (new_signature != mgp_stage_signature) {
+          mgp_stage_signature = new_signature;
+          applyPatch(info.text_addr, info.text_size, 1);
         }
-
-        hooked_camera_addr = 0;
-        applyPatch(info.text_addr, info.text_size, 1);
       }
     }
   }
